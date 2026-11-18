@@ -1,4 +1,4 @@
-"""One waveform canvas per operator/source, with one labelled subplot per case."""
+"""One canvas per operator/source; each case shows power D/Y/AB/AE/AN."""
 import argparse
 from array import array
 from collections import defaultdict
@@ -27,62 +27,83 @@ def time_unit_from_header(header):
     return match[1].replace('µ','u').replace('μ','u') if match else None
 
 
-def read_waveform(path, power_unit='auto', input_time_unit='auto'):
-    """Read A/D in order. Invalid power remains a gap, never a zero or interpolation."""
+def read_waveforms(path, power_unit='auto', input_time_unit='auto', channels=None):
+    """Read all rails once, preserving a common time origin and per-rail gaps."""
     if common.load_workbook is None:
         raise ValueError('请先安装依赖：python -m pip install -r requirements_power.txt')
+    states={c:dict(powers=array('d'),header='',valid=0,invalid=0,mean=0.0,unit=None)
+            for c in (channels or common.POWER_CHANNELS)}
+    max_col=max(common.POWER_CHANNELS[c]['index'] for c in states)
     book=common.load_workbook(path,read_only=True,data_only=True)
-    times,powers=array('d'),array('d')
+    times=array('d')
     first=previous=kind=None
-    time_header=power_header=''
-    invalid=valid=0
-    mean=0.0
+    time_header=''
     try:
         sheet=book.worksheets[0]
         sheet.reset_dimensions()
-        for row_number,row in enumerate(sheet.iter_rows(max_col=4,values_only=True),1):
-            a,_,_,c=(list(row)+[None]*4)[:4]
-            if a is None and c is None:continue
+        for row_number,row in enumerate(sheet.iter_rows(max_col=max_col,values_only=True),1):
+            row=(list(row)+[None]*max_col)[:max_col]
+            a=row[0]
+            values={c:row[common.POWER_CHANNELS[c]['index']-1] for c in states}
+            if a is None and all(v is None for v in values.values()):continue
             try:
                 current_kind,t=common.timestamp(a)
             except ValueError as exc:
                 if first is None:
                     if isinstance(a,str):time_header=a.strip()
-                    if isinstance(c,str):power_header=c.strip()
+                    for column,value in values.items():
+                        if isinstance(value,str):states[column]['header']=value.strip()
                     continue
                 raise ValueError(f'第{row_number}行时间戳无效，无法绘制连续时间波形') from exc
             if first is None:
                 first=previous=t;kind=current_kind
-                detected=common.power_unit(power_header)
-                actual_power_unit=detected if power_unit=='auto' else power_unit
-                if actual_power_unit is None:
-                    raise ValueError('D列表头没有功耗单位，请指定 --power-unit W 或 mW')
+                for state in states.values():
+                    state['unit']=common.power_unit(state['header']) if power_unit=='auto' else power_unit
                 actual_time_unit=('s' if kind=='seconds' else
                     time_unit_from_header(time_header) if input_time_unit=='auto' else input_time_unit)
                 if actual_time_unit is None:
-                    raise ValueError('A列表头没有时间单位，请指定 --input-time-unit us/ms/s/ns')
-                power_scale=1000.0 if actual_power_unit=='W' else 1.0
+                    message='A列表头没有时间单位，请指定 --input-time-unit us/ms/s/ns'
+                    if any(s['unit'] is None for s in states.values()):
+                        message='功耗列表头没有单位，请指定 --power-unit W 或 mW；'+message
+                    raise ValueError(message)
                 time_scale=TIME_SCALE[actual_time_unit]
             elif current_kind!=kind or t<=previous:
                 raise ValueError(f'第{row_number}行时间戳重复、倒序或格式混用；波形要求严格递增')
             previous=t
             elapsed=float(t-first)*time_scale
             if not math.isfinite(elapsed):raise ValueError('时间跨度超出范围')
-            try:
-                p=float(common.number(c))*power_scale
-                if not math.isfinite(p):raise ValueError('功耗超出范围')
-            except (ValueError,OverflowError):
-                p=math.nan;invalid+=1
-            else:
-                valid+=1;mean+=(p-mean)/valid
-            times.append(elapsed);powers.append(p)
-        if not valid:raise ValueError('没有有效功耗采样')
-        y=np.asarray(powers)
-        stats=dict(sheet=sheet.title,samples=len(times),valid_samples=valid,invalid_power_rows=invalid,
-            duration_s=times[-1],input_time_unit=actual_time_unit,input_power_unit=actual_power_unit,
-            mean_mw=mean,min_mw=float(np.nanmin(y)),max_mw=float(np.nanmax(y)))
-        return np.asarray(times),y,stats
+            times.append(elapsed)
+            for column,state in states.items():
+                try:
+                    p=float(common.number(values[column]))*(1000.0 if state['unit']=='W' else 1.0)
+                    if not math.isfinite(p):raise ValueError('功耗超出范围')
+                except (ValueError,OverflowError):
+                    p=math.nan;state['invalid']+=1
+                else:
+                    state['valid']+=1;state['mean']+=(p-state['mean'])/state['valid']
+                state['powers'].append(p)
+        results,errors={},{}
+        x=np.asarray(times)
+        for column,state in states.items():
+            if not state['valid']:
+                errors[column]=f'{column}列没有有效功耗采样（列缺失或无有效功耗）'
+                continue
+            if state['unit'] is None:
+                errors[column]=f'{column}列表头没有功耗单位，请指定 --power-unit W 或 mW'
+                continue
+            y=np.asarray(state['powers'])
+            stats=dict(sheet=sheet.title,samples=len(times),valid_samples=state['valid'],invalid_power_rows=state['invalid'],
+                duration_s=times[-1],input_time_unit=actual_time_unit,input_power_unit=state['unit'],
+                mean_mw=state['mean'],min_mw=float(np.nanmin(y)),max_mw=float(np.nanmax(y)))
+            results[column]=(x,y,stats)
+        return results,errors
     finally:book.close()
+
+
+def read_waveform(path, power_unit='auto', input_time_unit='auto', column='D'):
+    results,errors=read_waveforms(path,power_unit,input_time_unit,[column])
+    if errors:raise ValueError(errors[column])
+    return results[column]
 
 
 def peak_points(x,y,max_points):
@@ -116,12 +137,14 @@ def font_family(font_file):
 def draw_operator(op,side,cases,index,output,args,errors,records):
     import matplotlib.pyplot as plt
     from matplotlib.colors import to_rgba
+    from matplotlib.lines import Line2D
     models=sorted(cases,key=lambda m:index[m]['sequence'])
     cols=min(args.cols,len(models));nrows=math.ceil(len(models)/cols)
     formulas={m:textwrap.fill(common.shape_formula(index[m]),width=42,
               break_long_words=False,break_on_hyphens=False) for m in models}
     extra_lines=max(formula.count('\n')+1 for formula in formulas.values())
-    panel_height=3.65+.19*extra_lines
+    max_repeats=max(len(paths) for paths in cases.values())
+    panel_height=3.65+.19*extra_lines+.16*(len(args.channels)+max_repeats+2)
     fig,axes=plt.subplots(nrows,cols,figsize=(5.0*cols,panel_height*nrows+0.7),squeeze=False,
                           sharey=not args.independent_y,layout='constrained')
     groups=list(dict.fromkeys(index[m]['group'] for m in models))
@@ -132,25 +155,28 @@ def draw_operator(op,side,cases,index,output,args,errors,records):
         meta=index[model];entry,case,original=common.identity(meta)
         color=colors[meta['group']]
         paths=sorted(cases[model])
-        successes=[]
+        successes=defaultdict(list);valid_repeats=set();styles={}
         for repeat,path in enumerate(paths,1):
             print(f'读取 {entry}/{case} · {repeat}/{len(paths)} · {path.name}',flush=True)
             try:
-                x,y,stats=read_waveform(path,args.power_unit,args.input_time_unit)
-                dx,dy=peak_points(x,y,args.max_points)
-                display_x=dx/TIME_SCALE[args.time_unit]
-                run_color=color if len(paths)==1 else plt.get_cmap('tab10')((repeat-1)%10)
-                style=['-','--',':','-.'][((repeat-1)//10)%4] if len(paths)>1 else '-'
-                ax.plot(display_x,dy,color=run_color,linestyle=style,linewidth=.85,
-                        marker='o' if stats['valid_samples']==1 else None,
-                        label=f'轮次{repeat}')
-                successes.append(stats)
-                global_min=min(global_min,stats['min_mw']);global_max=max(global_max,stats['max_mw'])
-                records.append([entry,case,original,common.SIDE_LABELS[side],meta['experiment'],meta['shape'],repeat,str(path),
-                    stats['sheet'],stats['samples'],stats['valid_samples'],stats['invalid_power_rows'],stats['duration_s'],
-                    stats['mean_mw'],stats['min_mw'],stats['max_mw'],len(dx),stats['input_time_unit'],stats['input_power_unit']])
+                series,channel_errors=read_waveforms(path,args.power_unit,args.input_time_unit,args.channels)
+                errors.extend([str(path),common.POWER_CHANNELS[c]['name'],c,error] for c,error in channel_errors.items())
+                style=['-','--',':','-.'][repeat-1] if repeat<=4 else (0,(repeat,1,1,1))
+                styles[repeat]=style
+                for column,(x,y,stats) in series.items():
+                    channel=common.POWER_CHANNELS[column]
+                    dx,dy=peak_points(x,y,args.max_points)
+                    display_x=dx/TIME_SCALE[args.time_unit]
+                    ax.plot(display_x,dy,color=channel['color'],linestyle=style,linewidth=.85,
+                            marker='o' if stats['valid_samples']==1 else None,
+                            label=f"{channel['name']} ({column}) · 轮次{repeat}")
+                    successes[column].append(stats);valid_repeats.add(repeat)
+                    global_min=min(global_min,stats['min_mw']);global_max=max(global_max,stats['max_mw'])
+                    records.append([entry,case,original,common.SIDE_LABELS[side],channel['name'],column,meta['experiment'],meta['shape'],repeat,str(path),
+                        stats['sheet'],stats['samples'],stats['valid_samples'],stats['invalid_power_rows'],stats['duration_s'],
+                        stats['mean_mw'],stats['min_mw'],stats['max_mw'],len(dx),stats['input_time_unit'],stats['input_power_unit']])
             except (ValueError,OSError,KeyError,IndexError,BadZipFile,ParseError) as exc:
-                errors.append([str(path),str(exc)])
+                errors.append([str(path),'','',str(exc)])
         diagnostic=meta[side+'_numeric_failed']
         label=f'case {case}'+(f' · {original}' if original else '')+(' · 历史数值失败' if diagnostic else '')
         if meta.get('folder_group'):
@@ -166,15 +192,21 @@ def draw_operator(op,side,cases,index,output,args,errors,records):
         ax.spines[['top','right']].set_visible(False)
         ax.set_facecolor(to_rgba(color,.035))
         if successes:
-            text=f"均值 {fmean(s['mean_mw'] for s in successes):.2f} mW · 有效{len(successes)}/{len(paths)}轮"
+            text=f"有效{len(valid_repeats)}/{len(paths)}轮 · {len(successes)}/{len(set(args.channels))}路功耗"
             ax.text(.02,.97,text,transform=ax.transAxes,va='top',fontsize=8,
                     bbox=dict(facecolor='white',edgecolor='none',alpha=.8,pad=2))
-            if len(paths)>1:ax.legend(loc='upper right',fontsize=7,framealpha=.85)
-            if max(s['duration_s'] for s in successes)>0:ax.set_xlim(left=0)
+            handles=[Line2D([0],[0],color=common.POWER_CHANNELS[c]['color'],linewidth=1.5,
+                label=f"{common.POWER_CHANNELS[c]['name']} ({c}) · 均值{fmean(s['mean_mw'] for s in stats):.2f} mW")
+                for c,stats in successes.items()]
+            if len(paths)>1:
+                handles.extend(Line2D([0],[0],color='#555555',linestyle=styles[r],label=f'轮次{r}') for r in sorted(valid_repeats))
+            ax.legend(handles=handles,loc='upper left',bbox_to_anchor=(0,-.23),fontsize=7,frameon=False,borderaxespad=0)
+            if max(s['duration_s'] for stats in successes.values() for s in stats)>0:ax.set_xlim(left=0)
         else:
             ax.text(.5,.5,'无法读取波形\n详见 errors.csv',ha='center',va='center',transform=ax.transAxes,color='#9C233C')
         case_stats.append(dict(entry=entry,case=case,original=original,experiment=meta['experiment'],
-            input_files=len(paths),valid_files=len(successes),historical_numeric_failed=diagnostic,
+            input_files=len(paths),valid_files=len(valid_repeats),valid_channels={c:len(s) for c,s in successes.items()},
+            historical_numeric_failed=diagnostic,
             formula=common.shape_formula(meta)))
     for ax in list(axes.flat)[len(models):]:ax.set_visible(False)
     if not args.independent_y and math.isfinite(global_min):
@@ -182,12 +214,12 @@ def draw_operator(op,side,cases,index,output,args,errors,records):
         axes.flat[0].set_ylim(global_min-margin,global_max+margin)
     y_note='各case独立功耗刻度' if args.independent_y else '同算子统一功耗刻度'
     subtitle=('\n' if cols==1 else '；').join([
-        '各文件起始时间归零',y_note,'标题注明实验类型','长波形保留分段峰谷显示'])
+        '各文件起始时间归零',y_note,'颜色区分功耗通道，线型区分轮次'])
     title='\n'.join(textwrap.wrap(f'{op} · {common.SIDE_LABELS[side]} · {len(models)} cases',width=28*cols))
     fig.suptitle(f'{title}\n{subtitle}',fontsize=14)
     meta=index[models[0]]
     stem=f'{meta.get("plot_stem",meta.get("entry",op))}_{side}_waveforms'
-    for ext in ('png','svg'):fig.savefig(output/'figures'/f'{stem}.{ext}',dpi=160)
+    for ext in ('png','svg'):fig.savefig(output/'figures'/f'{stem}.{ext}',dpi=160,bbox_inches='tight',pad_inches=.12)
     plt.close(fig)
     return dict(op=op,source=side,cases=case_stats,png=f'figures/{stem}.png',svg=f'figures/{stem}.svg')
 
@@ -216,36 +248,39 @@ def run(args):
             side=common.source_for(path,args.source,data.get('default_source'))
             meta=index[model]
             batches[(meta.get('plot_stem',meta['op']),side)][model].append(path)
-        except ValueError as exc:errors.append([str(path),str(exc)])
+        except ValueError as exc:errors.append([str(path),'','',str(exc)])
     records=[];canvases=[]
     with plt.rc_context({'font.sans-serif':[font],'axes.unicode_minus':False,'svg.fonttype':'none',
                          'path.simplify':False,'agg.path.chunksize':10000}):
         for (_,side),cases in sorted(batches.items(),key=lambda item:min(index[m]['sequence'] for m in item[1])):
             op=index[next(iter(cases))]['op']
             canvases.append(draw_operator(op,side,cases,index,output,args,errors,records))
-    common.write_csv(output/'waveform_summary.csv',['入口名称','编号','原编号','DDK来源','实验类型','完整shape','轮次','文件',
+    common.write_csv(output/'waveform_summary.csv',['入口名称','编号','原编号','DDK来源','功耗通道','功耗列','实验类型','完整shape','轮次','文件',
         'sheet','时间采样数','有效功耗数','无效功耗行数','记录时长(s)','算术平均功耗(mW)','最小功耗(mW)','最大功耗(mW)',
         '显示点数','原始时间单位','原始功耗单位'],records)
-    common.write_csv(output/'errors.csv',['文件','错误'],errors)
+    common.write_csv(output/'errors.csv',['文件','功耗通道','功耗列','错误'],errors)
     page='<!doctype html><meta charset="utf-8"><title>各算子功耗波形</title><style>body{font-family:Arial,sans-serif;max-width:1800px;margin:24px auto;padding:0 16px}img{width:100%}section{margin:32px 0}</style>'
     page+='<h1>各算子功耗波形</h1><p>每个case一个子图；按所属算子入口匹配数字编号。标题标注原编号、实验类型及运算公式，包含输入、权重、偏置和输出shape。'
     page+='重复测量在对应子图中分别显示；时间各自从0开始，不表示不同case的采集发生在同一时刻。'
     page+='缺失功耗保留断线；默认保留分段峰谷减少显示点数，没有做平滑、基线扣除或自动裁剪。</p>'
     page+='<p>未关联模型的文件按所在文件夹归为同一实验类型，并单独输出画布；不推测shape或历史实验参数。</p>'
-    page+='<p>读取首个sheet的A列时间戳、D列功耗。公式中@为矩阵乘法，*为逐元素乘法，箭头指向输出。标注“常量”的项为权重、偏置等固定参数，其他输入项为动态输入。Gemm、卷积等采用函数式写法，不根据shape猜测转置或填充等属性。</p>'
+    page+='<p>读取首个sheet的A列时间戳及所选功耗列（默认D/Y/AB/AE/AN），各路独立统计，不相加。颜色区分通道，线型区分重复轮次；图例标明通道及各轮均值的等权平均。缺失通道记录在错误表，其他通道继续绘制。</p>'
+    page+='<p>公式中@为矩阵乘法，*为逐元素乘法，箭头指向输出。标注“常量”的项为权重、偏置等固定参数，其他输入项为动态输入。Gemm、卷积等采用函数式写法，不根据shape猜测转置或填充等属性。</p>'
     page+='<p><a href="waveform_summary.csv">采样与完整shape汇总</a> · <a href="errors.csv">错误记录</a></p>'
     for canvas in canvases:
         title=html.escape(f"{canvas['op']} · {common.SIDE_LABELS[canvas['source']]} · {len(canvas['cases'])} cases")
         page+=f'<section><h2>{title}</h2><p><a href="{canvas["png"]}">打开原尺寸PNG</a> · <a href="{canvas["svg"]}">打开SVG</a></p><img src="{canvas["png"]}" alt="{title}"></section>'
     (output/'index.html').write_text(page,encoding='utf-8')
     result=dict(input=str(args.input.resolve()),output=str(output.resolve()),index=str(args.index.resolve()),
-        files_found=len(files),valid_files=len(records),failed_files=len(errors),case_count=sum(len(c['cases']) for c in canvases),
+        files_found=len(files),valid_files=len({r[9] for r in records}),failed_files=len({r[0] for r in errors}),
+        valid_file_channels=len(records),channel_errors=len(errors),channels={c:common.POWER_CHANNELS[c]['name'] for c in args.channels},
+        case_count=sum(len(c['cases']) for c in canvases),
         canvases=canvases,columns=args.cols,display_time_unit=args.time_unit,power_unit_override=args.power_unit,
         input_time_unit_override=args.input_time_unit,max_points=args.max_points,shared_power_scale=not args.independent_y,
         display_reduction='Per-bin endpoints/min/max; gap boundaries retained. Statistics use all valid samples.')
     (output/'run_info.json').write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8')
     print(json.dumps({k:v for k,v in result.items() if k!='canvases'},ensure_ascii=False,indent=2))
-    for path,error in errors[:10]:print(f'ERROR: {path}: {error}',file=sys.stderr)
+    for path,channel,column,error in errors[:10]:print(f'ERROR: {path} [{channel} {column}]: {error}',file=sys.stderr)
     return 2 if errors else 0
 
 
@@ -255,7 +290,8 @@ def main():
     parser.add_argument('--output',type=Path,help='新建/空输出目录')
     parser.add_argument('--index',type=Path,default=Path(__file__).with_name('power_model_index.json'))
     parser.add_argument('--source',choices=['auto','internal','external'],default='auto')
-    parser.add_argument('--power-unit',choices=['auto','W','mW'],default='auto',help='D列原始功耗单位')
+    parser.add_argument('--power-unit',choices=['auto','W','mW'],default='auto',help='所有所选功耗列的原始单位；默认分别识别各列表头')
+    parser.add_argument('--channels',nargs='+',type=str.upper,choices=list(common.POWER_CHANNELS),default=list(common.POWER_CHANNELS),help='所选功耗列，默认D Y AB AE AN；只看NPU可用 --channels D')
     parser.add_argument('--input-time-unit',choices=['auto','s','ms','us','ns'],default='auto',help='A列数值时间戳的原始单位')
     parser.add_argument('--time-unit',choices=['s','ms','us'],default='ms',help='图的时间显示单位')
     parser.add_argument('--cols',type=int,default=4,help='每行子图数，默认4')

@@ -1,6 +1,16 @@
 # 编号 case 平均功耗绘图
 
-从每个 `编号db.xlsx` 的首个 sheet 读取 **A 列时间戳、D 列功耗**，计算平均功耗，再按实验类别绘制折线图。图内列出各 case 的输入、权重、偏置和输出 shape。
+从每个 `编号db.xlsx` 的首个 sheet 读取 **A 列时间戳及五路功耗**，分别计算平均功耗，再按实验类别绘制折线图。图内列出各 case 的输入、权重、偏置和输出 shape。
+
+| Excel 列 | 功耗通道 |
+| --- | --- |
+| D（第 4 列） | NPU |
+| Y（第 25 列） | Vbuck8_1v8 |
+| AB（第 28 列） | VBUCK1_1V12 |
+| AE（第 31 列） | VBUCK0_PERI |
+| AN（第 40 列） | DDRPHY |
+
+默认在同一张图中显示五路曲线，各路独立统计，不相加。颜色区分通道；圆点表示外源、三角表示内源、空心菱形表示历史数值校验失败。
 
 ## 运行
 
@@ -11,7 +21,15 @@ python -m pip install -r requirements_power.txt
 python -X utf8 plot_power.py --input "D:\功耗数据" --output "D:\平均功耗图"
 ```
 
-`--input` 是数据根目录；`--output` 必须为空或不存在。省略输出参数会在输入目录下新建带时间戳的结果目录。表头没有功耗单位时，加 `--power-unit W` 或 `--power-unit mW`，按实际单位填写。
+`--input` 是数据根目录；`--output` 必须为空或不存在。省略输出参数会在输入目录下新建带时间戳的结果目录。各列分别从自己的表头识别 W/mW，再统一换算为 mW；表头没有功耗单位且所选列单位一致时，加 `--power-unit W` 或 `--power-unit mW`，该参数会覆盖所有所选列的单位。
+
+运行命令不变，默认读取全部五路。只查看部分通道时指定列字母，例如：
+
+```powershell
+python -X utf8 plot_power.py --input "D:\功耗数据" --channels D AN
+```
+
+`--channels D` 保留原来的 NPU 单通道视图；也适用于只有第四列功耗的旧文件。某一路缺列、无有效数据或单位不明时，记录到 `errors.csv`，其他有效通道继续输出，不补零。
 
 ## 输入目录与编号
 
@@ -52,9 +70,11 @@ case 0 (g1): A常量[512,4096] @ B[4096,16] -> Y[512,16]
 ## 输出
 
 - `index.html`、`figures/*.png` 和 `*.svg`：浏览全部实验类别的图。
-- `power_summary.csv`、`power_runs.csv`：配置汇总和逐文件统计，统一为 mW。
-- `coverage.csv`：已知配置及发现的未知 case 的测量覆盖情况。
+- `power_summary.csv`：每个配置/来源/通道一行；`power_runs.csv`：每个文件/通道一行，统一为 mW。均新增“功耗通道”“功耗列”。
+- `coverage.csv`：按通道列出已知配置及发现的未知 case 的测量覆盖情况。
 - `errors.csv`、`run_info.json`：读取错误、分组及运行参数。其他有效文件会继续处理。
+
+多轮均值和误差棒分别在各通道内计算。`valid_files` 按文件去重，`valid_file_channels` 为成功的文件与通道组合数；部分通道失败的文件会同时计入有效文件和失败文件。部分失败时退出码为 2，已生成的有效结果仍可使用。
 
 CSV 为 UTF-8 BOM，可直接用 Excel 打开。已有合成数据与布局验证；公司真实测量应在本地核对单位和采样区间。
 

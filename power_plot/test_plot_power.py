@@ -1,7 +1,10 @@
 """Small, synthetic checks for power arithmetic and directory identification."""
 from datetime import datetime
+import csv
+import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
@@ -20,6 +23,19 @@ class Book:
     def close(self): pass
 
 
+def channel_rows():
+    # Neighbouring columns deliberately contain unrelated large values.
+    rows=[[999]*40 for _ in range(4)]
+    for row,t in zip(rows,['Timestamp[us]',0,1,4]):row[0]=t
+    for offset,values in {
+        3:['NPU[W]',1,3,5], 24:['Vbuck8_1v8(mW)',10,20,30],
+        27:['VBUCK1_1V12(W)',.1,.3,.5], 30:['VBUCK0_PERI(mW)',50,75,100],
+        39:['DDRPHY(W)',.002,.004,.006],
+    }.items():
+        for row,value in zip(rows,values):row[offset]=value
+    return rows
+
+
 class PowerTests(unittest.TestCase):
     def read(self, rows, unit='auto'):
         with patch.object(pp, 'load_workbook', return_value=Book(rows)) as loader:
@@ -36,6 +52,65 @@ class PowerTests(unittest.TestCase):
         self.assertEqual(r['samples'],4)
         self.assertEqual(r['sheet'],'First')
         self.assertEqual(r['time_unit'],'us')
+
+    def test_all_rails_use_exact_columns_units_and_one_scan(self):
+        book=Book(channel_rows())
+        with patch.object(pp,'load_workbook',return_value=book) as loader, \
+             patch.object(book.worksheets[0],'iter_rows',wraps=book.worksheets[0].iter_rows) as scan:
+            results,errors=pp.read_power_channels(Path('0db.xlsx'))
+        self.assertEqual(errors,{})
+        loader.assert_called_once();scan.assert_called_once()
+        self.assertEqual(scan.call_args.kwargs['max_col'],40)
+        self.assertEqual(set(results),{'D','Y','AB','AE','AN'})
+        for c,mean,weighted in [('D',3000,3500),('Y',20,22.5),('AB',300,350),('AE',75,81.25),('AN',4,4.5)]:
+            with self.subTest(column=c):
+                self.assertAlmostEqual(results[c]['sample_mean_mw'],mean)
+                self.assertAlmostEqual(results[c]['time_mean_mw'],weighted)
+
+    def test_missing_and_invalid_rails_do_not_erase_other_channels(self):
+        rows=channel_rows()
+        for row in rows:row[39]=None
+        rows[2][27]=None
+        rows[0][24]='Vbuck8_1v8'
+        with patch.object(pp,'load_workbook',return_value=Book(rows)):
+            results,errors=pp.read_power_channels(Path('0db.xlsx'))
+        self.assertEqual(set(errors),{'AN','Y'})
+        self.assertIn('--power-unit',errors['Y'])
+        self.assertEqual(results['D']['sample_mean_mw'],3000)
+        self.assertAlmostEqual(results['AB']['sample_mean_mw'],300)
+        self.assertIsNone(results['AB']['time_mean_mw'])
+        self.assertEqual(results['AB']['invalid_power_rows'],1)
+        with patch.object(pp,'load_workbook',return_value=Book(rows)):
+            selected,errors=pp.read_power_channels(Path('0db.xlsx'),'mW',['Y'])
+        self.assertEqual(errors,{})
+        self.assertEqual(selected['Y']['sample_mean_mw'],20)
+
+    def test_repeat_aggregation_and_file_counts_stay_separate_by_rail(self):
+        with TemporaryDirectory() as tmp:
+            root=Path(tmp);data=root/'data';data.mkdir()
+            for name in ['0db.xlsx','000_db.xlsx']:(data/name).touch()
+            index=root/'index.json'
+            index.write_text(json.dumps(dict(models=[],default_source='internal')),encoding='utf-8')
+            args=SimpleNamespace(input=data,output=root/'out',index=index,source='auto',power_unit='auto',
+                                 channels=list(pp.POWER_CHANNELS),average='sample',x_axis='scan')
+            first=channel_rows();second=channel_rows()
+            for row in second[1:]:
+                for offset in [3,24,27,30,39]:row[offset]*=2
+            with patch.object(pp,'load_workbook',side_effect=[Book(first),Book(second)]), \
+                 patch.object(pp,'plot_groups',return_value=[]),patch('builtins.print'):
+                self.assertEqual(pp.run(args),0)
+            with (args.output/'power_summary.csv').open(encoding='utf-8-sig',newline='') as stream:
+                rows=list(csv.DictReader(stream))
+            self.assertEqual(len(rows),5)
+            actual={r['功耗列']:r for r in rows}
+            for c,value in [('D',4500),('Y',30),('AB',450),('AE',112.5),('AN',6)]:
+                self.assertAlmostEqual(float(actual[c]['平均功耗(mW)']),value)
+                self.assertEqual(actual[c]['测量文件数'],'2')
+            info=json.loads((args.output/'run_info.json').read_text(encoding='utf-8'))
+            self.assertEqual(info['valid_files'],2)
+            self.assertEqual(info['valid_file_channels'],10)
+            self.assertEqual(info['model_source_points'],1)
+            self.assertEqual(info['model_source_channel_points'],5)
 
     def test_milliwatts_and_zero_are_real_values(self):
         r=self.read([('t','ignored','ignored','功耗(mW)'),(10,None,999,0),(20,None,999,2),(30,None,999,4)])

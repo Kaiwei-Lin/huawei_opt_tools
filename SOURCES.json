@@ -25,7 +25,13 @@
       "source": "Current local power plotting tools",
       "data_columns": {
         "timestamp": "A",
-        "power": "D"
+        "power": {
+          "D": "NPU",
+          "Y": "Vbuck8_1v8",
+          "AB": "VBUCK1_1V12",
+          "AE": "VBUCK0_PERI",
+          "AN": "DDRPHY"
+        }
       },
       "numbering": "zero_based_per_operator",
       "known_cases": 156,
@@ -37,7 +43,13 @@
       "source": "Current local power plotting tools",
       "data_columns": {
         "timestamp": "A",
-        "power": "D"
+        "power": {
+          "D": "NPU",
+          "Y": "Vbuck8_1v8",
+          "AB": "VBUCK1_1V12",
+          "AE": "VBUCK0_PERI",
+          "AN": "DDRPHY"
+        }
       },
       "numbering": "zero_based_per_operator",
       "known_cases": 156,

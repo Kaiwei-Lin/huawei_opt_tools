@@ -1,4 +1,4 @@
-"""Offline power plots for numbered OMCs: first worksheet, timestamp A, power D."""
+"""Offline power plots: first worksheet, timestamp A, power D/Y/AB/AE/AN."""
 import argparse
 from collections import defaultdict
 import csv
@@ -24,6 +24,13 @@ except ImportError:
 FILE_PATTERN = re.compile(r"([a-z]+[1-9]\d*|\d+)_?db\.xlsx", re.I)
 SOURCES = {"内源": "internal", "internal": "internal", "外源": "external", "external": "external"}
 SIDE_LABELS = {"internal": "内源", "external": "外源"}
+POWER_CHANNELS = {
+    "D": dict(name="NPU", index=4, color="#2876B7"),
+    "Y": dict(name="Vbuck8_1v8", index=25, color="#D26A25"),
+    "AB": dict(name="VBUCK1_1V12", index=28, color="#269665"),
+    "AE": dict(name="VBUCK0_PERI", index=31, color="#9467BD"),
+    "AN": dict(name="DDRPHY", index=40, color="#C43C55"),
+}
 
 
 def number(value):
@@ -67,85 +74,109 @@ def power_unit(header):
     return None
 
 
-def read_power(path, requested_unit="auto"):
-    """Stream A/D sample pairs; duplicate times disable only the weighted mean."""
-    if load_workbook is None:
-        raise ValueError("请先安装 openpyxl：python -m pip install -r requirements_power.txt")
-    book = load_workbook(path, read_only=True, data_only=True)
-    count = invalid = invalid_time = 0
-    mean = m2 = area = 0.0
-    low, high = math.inf, -math.inf
-    first = previous = kind = None
-    power_header = time_header = ""
-    time_error = ""
-    try:
-        sheet = book.worksheets[0]
-        sheet_name = sheet.title
-        sheet.reset_dimensions()
-        for row_number, row in enumerate(sheet.iter_rows(max_col=4, values_only=True), 1):
-            a, _, _, c = (list(row) + [None] * 4)[:4]
-            if a is None and c is None:
-                continue
-            try:
-                p = float(number(c))
-                if not math.isfinite(p):
-                    raise ValueError("功耗超出浮点范围")
-            except (ValueError, OverflowError):
-                if count:
-                    invalid += 1
-                    time_error = time_error or f"第{row_number}行功耗缺失/无效，加权均值留空"
-                else:
-                    if isinstance(c, str): power_header = c.strip()
-                    if isinstance(a, str): time_header = a.strip()
-                continue
-            try:
-                current_kind, t = timestamp(a)
-            except ValueError:
-                if not count:
-                    # A preamble may contain numbers in D but is not a sample row.
-                    continue
-                invalid_time += 1
-                time_error = time_error or f"第{row_number}行时间戳无效，跳过该行；加权均值留空"
-                continue
-            count += 1
-            delta = p - mean
-            mean += delta / count
-            m2 += delta * (p - mean)
-            low, high = min(low, p), max(high, p)
-            if t is not None:
-                if first is None:
-                    first, kind = t, current_kind
-                elif current_kind != kind or t <= previous[0]:
-                    time_error = time_error or f"第{row_number}行时间戳重复、倒序或格式混用，加权均值留空"
-                elif not time_error:
-                    area += (previous[1] + p) * 0.5 * float(t - previous[0])
-                previous = (t, p)
-        if not count:
-            raise ValueError("第一个sheet的第1、4列没有有效采样数据")
-        detected = power_unit(power_header)
+class _PowerStats:
+    """Accumulate one rail while all selected columns share one worksheet scan."""
+    def __init__(self):
+        self.count = self.invalid = self.invalid_time = 0
+        self.mean = self.m2 = self.area = 0.0
+        self.low, self.high = math.inf, -math.inf
+        self.first = self.previous = self.kind = None
+        self.power_header = self.time_header = self.time_error = ""
+
+    def add(self, row_number, a, c):
+        if a is None and c is None:
+            return
+        try:
+            p = float(number(c))
+            if not math.isfinite(p):
+                raise ValueError("功耗超出浮点范围")
+        except (ValueError, OverflowError):
+            if self.count:
+                self.invalid += 1
+                self.time_error = self.time_error or f"第{row_number}行功耗缺失/无效，加权均值留空"
+            else:
+                if isinstance(c, str): self.power_header = c.strip()
+                if isinstance(a, str): self.time_header = a.strip()
+            return
+        try:
+            current_kind, t = timestamp(a)
+        except ValueError:
+            if self.count:
+                self.invalid_time += 1
+                self.time_error = self.time_error or f"第{row_number}行时间戳无效，跳过该行；加权均值留空"
+            return
+        self.count += 1
+        delta = p - self.mean
+        self.mean += delta / self.count
+        self.m2 += delta * (p - self.mean)
+        self.low, self.high = min(self.low, p), max(self.high, p)
+        if self.first is None:
+            self.first, self.kind = t, current_kind
+        elif current_kind != self.kind or t <= self.previous[0]:
+            self.time_error = self.time_error or f"第{row_number}行时间戳重复、倒序或格式混用，加权均值留空"
+        elif not self.time_error:
+            self.area += (self.previous[1] + p) * 0.5 * float(t - self.previous[0])
+        self.previous = (t, p)
+
+    def result(self, sheet_name, column, requested_unit):
+        if not self.count:
+            raise ValueError(f"第一个sheet的A/{column}列没有有效采样数据（列缺失或无有效功耗）")
+        detected = power_unit(self.power_header)
         unit = detected if requested_unit == "auto" else requested_unit
         if unit is None:
-            raise ValueError(f"第4列表头{power_header!r}没有功耗单位，请加 --power-unit W 或 --power-unit mW")
+            raise ValueError(f"{column}列表头{self.power_header!r}没有功耗单位，请加 --power-unit W 或 --power-unit mW")
         scale = 1000 if unit == "W" else 1
-        span = float(previous[0] - first) if previous and first is not None else None
-        weighted = area / span * scale if not time_error and count > 1 and span and span > 0 else None
-        warnings = [time_error] if time_error else []
-        if invalid:
-            warnings.append(f"跳过{invalid}行无效功耗；未将其填为0")
+        span = float(self.previous[0] - self.first)
+        weighted = self.area / span * scale if not self.time_error and self.count > 1 and span > 0 else None
+        warnings = [self.time_error] if self.time_error else []
+        if self.invalid:
+            warnings.append(f"跳过{self.invalid}行无效功耗；未将其填为0")
         if requested_unit != "auto" and detected and requested_unit != detected:
             warnings.append(f"手工单位{requested_unit}覆盖表头{detected}")
-        if count == 1:
+        if self.count == 1:
             warnings.append("只有一个有效采样，加权均值留空")
-        if kind == "seconds":
+        if self.kind == "seconds":
             time_unit = "s"
         else:
-            match = re.search(r"(?<![A-Za-z])(us|µs|μs|ms|ns|s)(?![A-Za-z])", time_header)
+            match = re.search(r"(?<![A-Za-z])(us|µs|μs|ms|ns|s)(?![A-Za-z])", self.time_header)
             time_unit = match[1] if match else "原始数值时间单位"
-        return dict(sheet=sheet_name, samples=count, invalid_power_rows=invalid, invalid_time_rows=invalid_time, input_power_unit=unit,
-            sample_mean_mw=mean*scale, time_mean_mw=weighted, sample_std_mw=math.sqrt(max(0,m2/count))*scale,
-            min_mw=low*scale, max_mw=high*scale, time_span=span, time_unit=time_unit, warning="；".join(warnings))
+        return dict(sheet=sheet_name, samples=self.count, invalid_power_rows=self.invalid,
+            invalid_time_rows=self.invalid_time, input_power_unit=unit,
+            sample_mean_mw=self.mean*scale, time_mean_mw=weighted,
+            sample_std_mw=math.sqrt(max(0,self.m2/self.count))*scale,
+            min_mw=self.low*scale, max_mw=self.high*scale, time_span=span, time_unit=time_unit, warning="；".join(warnings))
+
+
+def read_power_channels(path, requested_unit="auto", channels=None):
+    if load_workbook is None:
+        raise ValueError("请先安装 openpyxl：python -m pip install -r requirements_power.txt")
+    states = {c:_PowerStats() for c in (channels or POWER_CHANNELS)}
+    max_col = max(POWER_CHANNELS[c]['index'] for c in states)
+    book = load_workbook(path, read_only=True, data_only=True)
+    try:
+        sheet = book.worksheets[0]
+        sheet.reset_dimensions()
+        for row_number, row in enumerate(sheet.iter_rows(max_col=max_col, values_only=True), 1):
+            row = (list(row) + [None] * max_col)[:max_col]
+            for column, state in states.items():
+                state.add(row_number, row[0], row[POWER_CHANNELS[column]['index']-1])
+        results, errors = {}, {}
+        for column, state in states.items():
+            try:
+                results[column] = state.result(sheet.title, column, requested_unit)
+            except ValueError as exc:
+                errors[column] = str(exc)
+        return results, errors
     finally:
         book.close()
+
+
+def read_power(path, requested_unit="auto", column="D"):
+    """Single-channel API; the command line reads all five channels by default."""
+    results, errors = read_power_channels(path, requested_unit, [column])
+    if errors:
+        raise ValueError(errors[column])
+    return results[column]
 
 
 def source_for(path, override="auto", default_source=None):
@@ -294,6 +325,9 @@ def plot_groups(summary, index, output, x_axis, average):
             key = "value"
         xlabel = {"value":meta["axis"],"flops":"FLOPs","movement_bytes":"Logical data movement (bytes)"}[key]
         case_models=sorted({r['number'] for r in rows},key=lambda m:index[m]['sequence'])
+        annotation_columns={}
+        for row in rows:
+            annotation_columns.setdefault((row['number'],row['source']),row['column'])
         formulas=[]
         for model in case_models:
             _,case,original=identity(index[model])
@@ -304,22 +338,25 @@ def plot_groups(summary, index, output, x_axis, average):
         formula_text='\n\n'.join(formulas)
         formula_height=.35+.21*(formula_text.count('\n')+1)
         with plt.rc_context({"font.sans-serif":[font],"axes.unicode_minus":False,"svg.fonttype":"none"}):
-            fig, (ax,formula_ax) = plt.subplots(2,1,figsize=(10,5+formula_height),
+            fig, (ax,formula_ax) = plt.subplots(2,1,figsize=(12,5+formula_height),
                 gridspec_kw={'height_ratios':[5,formula_height]},layout="constrained")
-            for side,color,marker in [("external","#2876B7","o"),("internal","#D26A25","^")]:
-                points = sorted((r for r in rows if r["source"]==side),key=lambda r:(index[r["number"]][key],index[r["number"]]["sequence"]))
+            for column, side in dict.fromkeys((r['column'],r['source']) for r in rows):
+                channel=POWER_CHANNELS[column]
+                color=channel['color'];marker='o' if side=='external' else '^'
+                points = sorted((r for r in rows if r["source"]==side and r['column']==column),key=lambda r:(index[r["number"]][key],index[r["number"]]["sequence"]))
                 if not points: continue
                 # A numeric failure is historical OMC validation, not a power-file error.
                 for diagnostic in (False,True):
                     part=[r for r in points if r['diagnostic']==diagnostic]
                     if not part:continue
-                    label=(SIDE_LABELS[side] if chinese else side)+(('（历史数值失败）' if chinese else ' (numeric fail)') if diagnostic else '')
+                    label=f"{channel['name']} ({column}) · "+(SIDE_LABELS[side] if chinese else side)+(('（历史数值失败）' if chinese else ' (numeric fail)') if diagnostic else '')
                     xs=[index[r['number']][key] for r in part]; ys=[r['mean_mw'] for r in part]
                     ax.errorbar(xs,ys,yerr=[[r['mean_mw']-r['min_run_mw'] for r in part],
                         [r['max_run_mw']-r['mean_mw'] for r in part]],color=color,
                         marker='D' if diagnostic else marker,markerfacecolor='none' if diagnostic else color,
                         linestyle='--' if diagnostic else '-',capsize=3,linewidth=1.6,label=label)
                     for x,y,r in zip(xs,ys,part):
+                        if annotation_columns[(r['number'],side)]!=column:continue
                         ax.annotate(index[r['number']].get('file_number',r['number']),(x,y),xytext=(3,6 if side=='external' else -13),textcoords='offset points',fontsize=8)
             if meta.get('folder_group'):
                 title=f"{meta['experiment']} · "+('按文件夹归类' if chinese else 'Folder group')
@@ -332,7 +369,7 @@ def plot_groups(summary, index, output, x_axis, average):
             ax.set_xlabel(xlabel)
             ax.set_ylabel(('平均功耗' if chinese else 'Mean power')+f" (mW) · {'sample mean' if average=='sample' else 'time-weighted'}")
             ax.grid(alpha=.22);ax.spines[['top','right']].set_visible(False)
-            ax.legend(frameon=False)
+            ax.legend(frameon=False,loc='upper left',bbox_to_anchor=(1.01,1),fontsize=8)
             ax.text(0,-.18,('仅连接已有测量点；误差棒为多轮均值范围' if chinese else 'Measured points only; bars: range of run means'),
                     transform=ax.transAxes,fontsize=9,color='#555555')
             formula_ax.axis('off')
@@ -342,9 +379,10 @@ def plot_groups(summary, index, output, x_axis, average):
             plt.close(fig)
         pages.append(f'<section><h2>{html.escape(title)}</h2><img src="figures/{stem}.png" alt="{html.escape(title)}"></section>')
     page='<!doctype html><meta charset="utf-8"><title>功耗曲线</title><style>body{font-family:Arial,sans-serif;max-width:1100px;margin:24px auto;padding:0 16px}img{width:100%}section{margin:30px 0}</style>'
-    page+='<h1>功耗测量汇总</h1><p>读取首个sheet的A/D列。功耗统一为mW；每个曲线点为各文件平均功耗的算术平均。'
+    page+='<h1>功耗测量汇总</h1><p>读取首个sheet的A列时间戳和所选功耗列（默认D/Y/AB/AE/AN）。各通道独立统计，不相加；功耗统一为mW，每个曲线点为各文件平均功耗的算术平均。'
     page+='全文件统计，未扣基线、未自动裁剪启动或空闲区间。数值校验标记与时延来自配套OMC的历史记录。</p>'
     page+='<p>图中标记为该算子入口内的文件编号；配置汇总同时保留“入口名称、编号、原编号”。不同入口的同号文件分别统计。</p>'
+    page+='<p>颜色表示功耗通道；圆点表示外源，三角表示内源，空心菱形表示历史数值校验失败。缺失通道记入错误表，不补零。</p>'
     page+='<p>未关联模型的文件按所在文件夹归为同一实验类型，横轴为case顺序；shape、计算量和历史时延留空。</p>'
     page+='<p>图内列出各case的运算与完整张量shape：@为矩阵乘法，*为逐元素乘法，箭头指向输出。标注“常量”的项为权重、偏置等固定参数，其他输入项为动态输入。Gemm、卷积等使用函数式写法，不根据shape猜测转置或填充等属性。</p>'
     page+='<p><a href="power_summary.csv">配置汇总</a> · <a href="power_runs.csv">逐文件结果</a> · <a href="coverage.csv">测量覆盖</a> · <a href="errors.csv">读取错误</a></p>'
@@ -365,49 +403,57 @@ def run(args):
     if output.exists() and any(output.iterdir()):raise ValueError('输出目录非空，请选择新目录，避免混入旧图')
     output.mkdir(parents=True,exist_ok=True)
     runs,errors=[],[]
+    channels=args.channels
     for path in files:
         try:
             model=resolve_case(path,index,source_root)
             side=source_for(path,args.source,index_data.get('default_source'))
-            stats=read_power(path,args.power_unit)
-            value=stats['sample_mean_mw' if args.average=='sample' else 'time_mean_mw']
-            if value is None:raise ValueError('本文件不能计算时间加权均值；使用 --average sample 或修正时间戳/缺失功耗')
-            runs.append(dict(number=model,source=side,file=str(path),mean_mw=value,**stats))
+            results,channel_errors=read_power_channels(path,args.power_unit,channels)
+            for column,stats in results.items():
+                value=stats['sample_mean_mw' if args.average=='sample' else 'time_mean_mw']
+                if value is None:
+                    channel_errors[column]='本通道不能计算时间加权均值；使用 --average sample 或修正时间戳/缺失功耗'
+                else:
+                    runs.append(dict(number=model,source=side,column=column,file=str(path),mean_mw=value,**stats))
+            errors.extend([str(path),POWER_CHANNELS[c]['name'],c,error] for c,error in channel_errors.items())
         except (ValueError,OSError,KeyError,IndexError,BadZipFile,ParseError) as error:
-            errors.append([str(path),str(error)])
+            errors.append([str(path),'','',str(error)])
     grouped=defaultdict(list)
-    for row in runs:grouped[(row['number'],row['source'])].append(row)
+    for row in runs:grouped[(row['number'],row['source'],row['column'])].append(row)
     summary=[]
-    for (model,side),members in sorted(grouped.items(),key=lambda item:(index[item[0][0]]['sequence'],item[0][1])):
+    for (model,side,column),members in sorted(grouped.items(),key=lambda item:(index[item[0][0]]['sequence'],item[0][1],POWER_CHANNELS[item[0][2]]['index'])):
         means=[m['mean_mw'] for m in members]
-        summary.append(dict(number=model,source=side,runs=len(means),mean_mw=fmean(means),min_run_mw=min(means),
+        summary.append(dict(number=model,source=side,column=column,runs=len(means),mean_mw=fmean(means),min_run_mw=min(means),
             max_run_mw=max(means),diagnostic=index[model][side+'_numeric_failed']))
-    write_csv(output/'power_runs.csv',['入口名称','编号','原编号','DDK来源','文件','sheet','有效采样数','无效功耗行数','无效时间行数','输入功耗单位',
+    write_csv(output/'power_runs.csv',['入口名称','编号','原编号','DDK来源','功耗通道','功耗列','文件','sheet','有效采样数','无效功耗行数','无效时间行数','输入功耗单位',
         '算术平均功耗(mW)','时间加权平均功耗(mW)','本次绘图功耗(mW)','采样标准差(mW)','最小功耗(mW)','最大功耗(mW)',
-        '时间跨度','时间单位','备注'],[[*identity(index[r['number']]),SIDE_LABELS[r['source']],r['file'],r['sheet'],r['samples'],r['invalid_power_rows'],r['invalid_time_rows'],
+        '时间跨度','时间单位','备注'],[[*identity(index[r['number']]),SIDE_LABELS[r['source']],POWER_CHANNELS[r['column']]['name'],r['column'],r['file'],r['sheet'],r['samples'],r['invalid_power_rows'],r['invalid_time_rows'],
         r['input_power_unit'],r['sample_mean_mw'],r['time_mean_mw'],r['mean_mw'],r['sample_std_mw'],r['min_mw'],r['max_mw'],r['time_span'],r['time_unit'],r['warning']] for r in runs])
-    write_csv(output/'power_summary.csv',['入口名称','编号','原编号','DDK来源','算子类型','实验类别','shape','扫描轴','扫描值','计算量','逻辑搬运量(bytes)',
+    write_csv(output/'power_summary.csv',['入口名称','编号','原编号','DDK来源','功耗通道','功耗列','算子类型','实验类别','shape','扫描轴','扫描值','计算量','逻辑搬运量(bytes)',
         '测量文件数','平均功耗(mW)','轮均值最小(mW)','轮均值最大(mW)','历史核心时延(us)','历史模型时延(us)','历史TransData数','历史数值校验'],
-        [[*identity(index[r['number']]),SIDE_LABELS[r['source']],index[r['number']]['op'],index[r['number']]['experiment'],index[r['number']]['shape'],
+        [[*identity(index[r['number']]),SIDE_LABELS[r['source']],POWER_CHANNELS[r['column']]['name'],r['column'],index[r['number']]['op'],index[r['number']]['experiment'],index[r['number']]['shape'],
           index[r['number']]['axis'],index[r['number']]['value'],index[r['number']]['work'],index[r['number']]['movement_bytes'],r['runs'],
           r['mean_mw'],r['min_run_mw'],r['max_run_mw'],index[r['number']][r['source']+'_core_us'],index[r['number']][r['source']+'_model_us'],
           index[r['number']][r['source']+'_transdata'],index[r['number']][r['source']+'_numeric_status']] for r in summary])
-    write_csv(output/'coverage.csv',['入口名称','编号','原编号','算子类型','实验类别','筛选分组','外源测量文件数','内源测量文件数'],
-        [[*identity(r),r['op'],r['experiment'],r['selection'],len(grouped.get((r['number'],'external'),[])),
-          len(grouped.get((r['number'],'internal'),[]))] for r in index.values()])
-    write_csv(output/'errors.csv',['文件','错误'],errors)
+    write_csv(output/'coverage.csv',['入口名称','编号','原编号','功耗通道','功耗列','算子类型','实验类别','筛选分组','外源测量文件数','内源测量文件数'],
+        [[*identity(r),POWER_CHANNELS[c]['name'],c,r['op'],r['experiment'],r['selection'],len(grouped.get((r['number'],'external',c),[])),
+          len(grouped.get((r['number'],'internal',c),[]))] for r in index.values() for c in dict.fromkeys(channels)])
+    write_csv(output/'errors.csv',['文件','功耗通道','功耗列','错误'],errors)
     if summary:
         plot_notes=plot_groups(summary,index,output,args.x_axis,args.average)
     else:plot_notes=[]
-    result=dict(input=str(source_root),output=str(output),files_found=len(files),valid_files=len(runs),failed_files=len(errors),
-        model_source_points=len(summary),average=args.average,power_unit_override=args.power_unit,x_axis=args.x_axis,
+    result=dict(input=str(source_root),output=str(output),files_found=len(files),valid_files=len({r['file'] for r in runs}),
+        failed_files=len({r[0] for r in errors}),valid_file_channels=len(runs),channel_errors=len(errors),
+        model_source_points=len({(r['number'],r['source']) for r in summary}),model_source_channel_points=len(summary),
+        channels={c:POWER_CHANNELS[c]['name'] for c in channels},
+        average=args.average,power_unit_override=args.power_unit,x_axis=args.x_axis,
         source_override=args.source,index_default_source=index_data.get('default_source'),index_batch=index_data.get('batch'),
         index=str(args.index),plot_notes=plot_notes,
-        folder_cases=[dict(entry=identity(index[r['number']])[0],case=identity(index[r['number']])[1],source=r['source'])
-                      for r in summary if index[r['number']].get('folder_group')])
+        folder_cases=[dict(entry=identity(index[m])[0],case=identity(index[m])[1],source=side)
+                      for m,side in dict.fromkeys((r['number'],r['source']) for r in summary if index[r['number']].get('folder_group'))])
     (output/'run_info.json').write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8')
     print(json.dumps(result,ensure_ascii=False,indent=2))
-    for path,error in errors[:10]:print(f'ERROR: {path}: {error}',file=sys.stderr)
+    for path,channel,column,error in errors[:10]:print(f'ERROR: {path} [{channel} {column}]: {error}',file=sys.stderr)
     return 2 if errors else 0
 
 
@@ -417,7 +463,8 @@ def main():
     parser.add_argument('--output',type=Path,help='新建/空输出目录；默认输入目录下带时间戳的新目录')
     parser.add_argument('--index',type=Path,default=Path(__file__).with_name('power_model_index.json'))
     parser.add_argument('--source',choices=['auto','internal','external'],default='auto',help='默认从目录名识别；无标记时使用配套索引默认来源')
-    parser.add_argument('--power-unit',choices=['auto','W','mW'],default='auto',help='第4列原始单位，默认识别表头')
+    parser.add_argument('--power-unit',choices=['auto','W','mW'],default='auto',help='所有所选功耗列的原始单位；默认分别识别各列表头')
+    parser.add_argument('--channels',nargs='+',type=str.upper,choices=list(POWER_CHANNELS),default=list(POWER_CHANNELS),help='所选功耗列，默认D Y AB AE AN；只看NPU可用 --channels D')
     parser.add_argument('--average',choices=['sample','time'],default='sample',help='默认算术均值；time为梯形积分/时间跨度')
     parser.add_argument('--x-axis',choices=['scan','flops','bytes'],default='scan',help='默认使用各实验类别原来的扫描维度')
     args=parser.parse_args()

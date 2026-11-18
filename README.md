@@ -72,7 +72,9 @@ cd ..
 ## 两个固定列功耗工具的数据约定
 
 - 只读取符合 `编号db.xlsx` 的文件，例如 `0db.xlsx`、`12db.xlsx`；兼容 `a1db.xlsx`、`001_db.xlsx`。其他 Excel 文件直接忽略。
-- 第一个 sheet：**A 列为时间戳，D 列为功耗**。输入功耗单位可从表头读取，或使用 `--power-unit W/mW` 指定；波形的数值时间单位不明时再指定 `--input-time-unit s/ms/us/ns`。
+- 第一个 sheet：**A 列为时间戳**；默认同时读取 **D=NPU、Y=Vbuck8_1v8、AB=VBUCK1_1V12、AE=VBUCK0_PERI、AN=DDRPHY** 五路功耗，分别统计并绘图，不相加。
+- 各功耗列分别从表头识别 W/mW；`--power-unit W/mW` 会覆盖所有所选列的单位。波形的数值时间单位不明时指定 `--input-time-unit s/ms/us/ns`。用 `--channels D AN` 选择部分通道，或 `--channels D` 单独查看 NPU。
+- 汇总 CSV 新增“功耗通道”“功耗列”，每个配置/文件按通道分别输出。缺失或无效通道写入错误表，其他有效通道继续处理。
 - 目录命名为 `convolution_close`、`matmul_close` 等，每个算子分别从 0 编号；兼容旧的 `closed_*` 名称。
 - 配套索引包含内源完整类别的 156 个配置，默认来源为内源；逐项对应关系见各工具的 `numbering.csv`。
 - 未匹配到模型的文件按直接存放 Excel 的文件夹归为同一种实验类型，不同路径分别分组；缺少的模型 shape 明确标为未知。
@@ -82,7 +84,7 @@ cd ..
 
 ## 来源与验证
 
-导入版本、排除的历史模型包见 [SOURCES.json](SOURCES.json)。两个原仓库按远端 `main` 快照导入，源码与测试保留；绘图工具包含本次对目录命名、第四列功耗、编号文件过滤和 shape 标注的更新。
+导入版本、排除的历史模型包见 [SOURCES.json](SOURCES.json)。两个原仓库按远端 `main` 快照导入，源码与测试保留；绘图工具支持目录命名、五路功耗、编号文件过滤和 shape 标注。
 
 按目录运行测试：
 
