@@ -1,0 +1,40 @@
+# Python environments and caches
+__pycache__/
+*.py[cod]
+.venv*/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.env
+.env.*
+!.env.example
+
+# Local models, measurements, archives, and generated outputs
+*.onnx
+*.omc
+*.om
+*.bin
+*.data
+*.npy
+*.npz
+*.pkl
+*.db
+*.xlsx
+*.xls
+*.zip
+*.7z
+*.log
+*.tmp
+results/
+results_*/
+outputs/
+power_data/
+power_plots_*/
+power_waveforms_*/
+
+# Editor files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

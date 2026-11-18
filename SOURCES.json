@@ -1,0 +1,48 @@
+{
+  "integrated_on": "2026-11-18",
+  "sources": [
+    {
+      "directory": "onnx_omc_generator",
+      "repository": "https://github.com/Kaiwei-Lin/onnx_omc_generator",
+      "branch": "main",
+      "commit": "271b8c71cef0c304ca28374e35e9ff9a599a520c",
+      "imported_files": 49,
+      "omitted_files": [
+        "results.zip",
+        "results_31us_verified.zip"
+      ]
+    },
+    {
+      "directory": "op_power_subgraph_extract",
+      "repository": "https://github.com/Kaiwei-Lin/op_power_subgraph_extract",
+      "branch": "main",
+      "commit": "b5322e57315eef5d1529f32b1731446e1ebdf822",
+      "imported_files": 43,
+      "omitted_files": []
+    },
+    {
+      "directory": "power_plot",
+      "source": "Current local power plotting tools",
+      "data_columns": {
+        "timestamp": "A",
+        "power": "D"
+      },
+      "numbering": "zero_based_per_operator",
+      "known_cases": 156,
+      "filename_pattern": "numberdb.xlsx",
+      "standalone": true
+    },
+    {
+      "directory": "power_waveforms",
+      "source": "Current local power plotting tools",
+      "data_columns": {
+        "timestamp": "A",
+        "power": "D"
+      },
+      "numbering": "zero_based_per_operator",
+      "known_cases": 156,
+      "filename_pattern": "numberdb.xlsx",
+      "standalone": true
+    }
+  ]
+}

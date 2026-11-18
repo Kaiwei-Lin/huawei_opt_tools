@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+/results/
+/results_*/
+/results_boundary_31us_verified.zip
+/results_shape_sweep*.zip
+*.tmp

@@ -1,0 +1,25 @@
+# Local models, profiling data, and generated reports
+models/
+name_aliases.json
+outputs/
+networkx/
+*.onnx
+*.omc
+*.om
+*.data
+*.bin
+*.pkl
+*.csv
+*.tsv
+*.xlsx
+*.xls
+*.zip
+*.7z
+
+# Python environments and caches
+__pycache__/
+*.py[cod]
+.venv*/
+.pytest_cache/
+.env
+.env.*

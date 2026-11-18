@@ -1,0 +1,466 @@
+﻿入口名称,数字编号,原编号,算子类型,实验类别,shape,预期功耗文件路径
+convolution_close,0,a1,Convolution,1x1卷积：空间宽度,"X[1, 128, 2, 6144]
+W常量[128, 128, 1, 1]
+B常量[128]
+Y[1, 128, 2, 6144]",convolution_close/0db.xlsx
+convolution_close,1,a4,Convolution,1x1卷积：空间宽度,"X[1, 128, 2, 10240]
+W常量[128, 128, 1, 1]
+B常量[128]
+Y[1, 128, 2, 10240]",convolution_close/1db.xlsx
+convolution_close,2,a7,Convolution,1x1卷积：空间宽度,"X[1, 128, 2, 16384]
+W常量[128, 128, 1, 1]
+B常量[128]
+Y[1, 128, 2, 16384]",convolution_close/2db.xlsx
+convolution_close,3,a8,Convolution,1x1卷积：空间宽度,"X[1, 128, 2, 20480]
+W常量[128, 128, 1, 1]
+B常量[128]
+Y[1, 128, 2, 20480]",convolution_close/3db.xlsx
+convolution_close,4,d1,Convolution,1x1卷积：输入通道,"X[1, 64, 2, 8192]
+W常量[128, 64, 1, 1]
+B常量[128]
+Y[1, 128, 2, 8192]",convolution_close/4db.xlsx
+convolution_close,5,d3,Convolution,1x1卷积：输入通道,"X[1, 96, 2, 8192]
+W常量[128, 96, 1, 1]
+B常量[128]
+Y[1, 128, 2, 8192]",convolution_close/5db.xlsx
+convolution_close,6,d5,Convolution,1x1卷积：输入通道,"X[1, 160, 2, 8192]
+W常量[128, 160, 1, 1]
+B常量[128]
+Y[1, 128, 2, 8192]",convolution_close/6db.xlsx
+convolution_close,7,d6,Convolution,1x1卷积：输入通道,"X[1, 192, 2, 8192]
+W常量[128, 192, 1, 1]
+B常量[128]
+Y[1, 128, 2, 8192]",convolution_close/7db.xlsx
+convolution_close,8,d8,Convolution,1x1卷积：输入通道,"X[1, 256, 2, 8192]
+W常量[128, 256, 1, 1]
+B常量[128]
+Y[1, 128, 2, 8192]",convolution_close/8db.xlsx
+convolution_close,9,e1,Convolution,1x1卷积：输出通道,"X[1, 128, 2, 8192]
+W常量[64, 128, 1, 1]
+B常量[64]
+Y[1, 64, 2, 8192]",convolution_close/9db.xlsx
+convolution_close,10,e3,Convolution,1x1卷积：输出通道,"X[1, 128, 2, 8192]
+W常量[96, 128, 1, 1]
+B常量[96]
+Y[1, 96, 2, 8192]",convolution_close/10db.xlsx
+convolution_close,11,e5,Convolution,1x1卷积：输出通道,"X[1, 128, 2, 8192]
+W常量[160, 128, 1, 1]
+B常量[160]
+Y[1, 160, 2, 8192]",convolution_close/11db.xlsx
+convolution_close,12,e8,Convolution,1x1卷积：输出通道,"X[1, 128, 2, 8192]
+W常量[256, 128, 1, 1]
+B常量[256]
+Y[1, 256, 2, 8192]",convolution_close/12db.xlsx
+convolution_close,13,f1,Convolution,Depthwise卷积：空间宽度,"X[1, 512, 1, 2048]
+W常量[512, 1, 1, 3]
+B常量[512]
+Y[1, 512, 1, 2050]",convolution_close/13db.xlsx
+convolution_close,14,f3,Convolution,Depthwise卷积：空间宽度,"X[1, 512, 1, 2560]
+W常量[512, 1, 1, 3]
+B常量[512]
+Y[1, 512, 1, 2562]",convolution_close/14db.xlsx
+convolution_close,15,f5,Convolution,Depthwise卷积：空间宽度,"X[1, 512, 1, 3072]
+W常量[512, 1, 1, 3]
+B常量[512]
+Y[1, 512, 1, 3074]",convolution_close/15db.xlsx
+convolution_close,16,f8,Convolution,Depthwise卷积：空间宽度,"X[1, 512, 1, 3840]
+W常量[512, 1, 1, 3]
+B常量[512]
+Y[1, 512, 1, 3842]",convolution_close/16db.xlsx
+convolution_close,17,aa2,Convolution,1x1卷积：较小空间工作量,"X[1, 64, 2, 2544]
+W常量[64, 64, 1, 1]
+B常量[64]
+Y[1, 64, 2, 2544]",convolution_close/17db.xlsx
+convolution_close,18,aa4,Convolution,1x1卷积：较小空间工作量,"X[1, 64, 2, 3072]
+W常量[64, 64, 1, 1]
+B常量[64]
+Y[1, 64, 2, 3072]",convolution_close/18db.xlsx
+convolution_close,19,aa6,Convolution,1x1卷积：较小空间工作量,"X[1, 64, 2, 4096]
+W常量[64, 64, 1, 1]
+B常量[64]
+Y[1, 64, 2, 4096]",convolution_close/19db.xlsx
+convolution_close,20,aa8,Convolution,1x1卷积：较小空间工作量,"X[1, 64, 2, 6144]
+W常量[64, 64, 1, 1]
+B常量[64]
+Y[1, 64, 2, 6144]",convolution_close/20db.xlsx
+convolution_close,21,ac1,Convolution,1x1卷积：小输入通道,"X[1, 1, 2, 5120]
+W常量[64, 1, 1, 1]
+B常量[64]
+Y[1, 64, 2, 5120]",convolution_close/21db.xlsx
+convolution_close,22,ac5,Convolution,1x1卷积：小输入通道,"X[1, 16, 2, 5120]
+W常量[64, 16, 1, 1]
+B常量[64]
+Y[1, 64, 2, 5120]",convolution_close/22db.xlsx
+convolution_close,23,ac6,Convolution,1x1卷积：小输入通道,"X[1, 32, 2, 5120]
+W常量[64, 32, 1, 1]
+B常量[64]
+Y[1, 64, 2, 5120]",convolution_close/23db.xlsx
+convolution_close,24,ac8,Convolution,1x1卷积：小输入通道,"X[1, 64, 2, 5120]
+W常量[64, 64, 1, 1]
+B常量[64]
+Y[1, 64, 2, 5120]",convolution_close/24db.xlsx
+convolution_close,25,ad2,Convolution,1x3卷积：较小空间工作量,"X[1, 64, 2, 1536]
+W常量[64, 64, 1, 3]
+B常量[64]
+Y[1, 64, 2, 1536]",convolution_close/25db.xlsx
+convolution_close,26,ad3,Convolution,1x3卷积：较小空间工作量,"X[1, 64, 2, 1664]
+W常量[64, 64, 1, 3]
+B常量[64]
+Y[1, 64, 2, 1664]",convolution_close/26db.xlsx
+convolution_close,27,ad4,Convolution,1x3卷积：较小空间工作量,"X[1, 64, 2, 1792]
+W常量[64, 64, 1, 3]
+B常量[64]
+Y[1, 64, 2, 1792]",convolution_close/27db.xlsx
+convolution_close,28,ad8,Convolution,1x3卷积：较小空间工作量,"X[1, 64, 2, 3072]
+W常量[64, 64, 1, 3]
+B常量[64]
+Y[1, 64, 2, 3072]",convolution_close/28db.xlsx
+matmul_close,0,g1,MatMul,MatMul：归约长度,"A常量[512, 4096]
+B[4096, 16]
+Y[512, 16]",matmul_close/0db.xlsx
+matmul_close,1,g4,MatMul,MatMul：归约长度,"A常量[512, 8192]
+B[8192, 16]
+Y[512, 16]",matmul_close/1db.xlsx
+matmul_close,2,g7,MatMul,MatMul：归约长度,"A常量[512, 14336]
+B[14336, 16]
+Y[512, 16]",matmul_close/2db.xlsx
+matmul_close,3,g8,MatMul,MatMul：归约长度,"A常量[512, 16384]
+B[16384, 16]
+Y[512, 16]",matmul_close/3db.xlsx
+matmul_close,4,ag1,MatMul,MatMul：小逻辑N,"A常量[512, 2048]
+B[2048, 1]
+Y[512, 1]",matmul_close/4db.xlsx
+matmul_close,5,ag2,MatMul,MatMul：小逻辑N,"A常量[512, 2048]
+B[2048, 2]
+Y[512, 2]",matmul_close/5db.xlsx
+matmul_close,6,ag4,MatMul,MatMul：小逻辑N,"A常量[512, 2048]
+B[2048, 32]
+Y[512, 32]",matmul_close/6db.xlsx
+matmul_close,7,ag5,MatMul,MatMul：小逻辑N,"A常量[512, 2048]
+B[2048, 64]
+Y[512, 64]",matmul_close/7db.xlsx
+matmul_close,8,ag7,MatMul,MatMul：小逻辑N,"A常量[512, 2048]
+B[2048, 112]
+Y[512, 112]",matmul_close/8db.xlsx
+matmul_close,9,ag8,MatMul,MatMul：小逻辑N,"A常量[512, 2048]
+B[2048, 128]
+Y[512, 128]",matmul_close/9db.xlsx
+gemmd_close,0,i1,GemmD,Gemm：行数,"A[256, 1024]
+B常量[1024, 1024]
+C常量[1024]
+Y[256, 1024]",gemmd_close/0db.xlsx
+gemmd_close,1,i3,GemmD,Gemm：行数,"A[384, 1024]
+B常量[1024, 1024]
+C常量[1024]
+Y[384, 1024]",gemmd_close/1db.xlsx
+gemmd_close,2,i5,GemmD,Gemm：行数,"A[640, 1024]
+B常量[1024, 1024]
+C常量[1024]
+Y[640, 1024]",gemmd_close/2db.xlsx
+gemmd_close,3,i8,GemmD,Gemm：行数,"A[1024, 1024]
+B常量[1024, 1024]
+C常量[1024]
+Y[1024, 1024]",gemmd_close/3db.xlsx
+gemmd_close,4,z1,GemmD,Gemm：小M并行度,"A[1, 1024]
+B常量[1024, 4096]
+C常量[4096]
+Y[1, 4096]",gemmd_close/4db.xlsx
+gemmd_close,5,z3,GemmD,Gemm：小M并行度,"A[4, 1024]
+B常量[1024, 4096]
+C常量[4096]
+Y[4, 4096]",gemmd_close/5db.xlsx
+gemmd_close,6,z7,GemmD,Gemm：小M并行度,"A[64, 1024]
+B常量[1024, 4096]
+C常量[4096]
+Y[64, 4096]",gemmd_close/6db.xlsx
+gemmd_close,7,z8,GemmD,Gemm：小M并行度,"A[128, 1024]
+B常量[1024, 4096]
+C常量[4096]
+Y[128, 4096]",gemmd_close/7db.xlsx
+batchmatmul_close,0,j1,BatchMatMul,BatchMatMul：共享权重行数,"A[1, 64, 256, 128]
+B常量[128, 32]
+Y[1, 64, 256, 32]",batchmatmul_close/0db.xlsx
+batchmatmul_close,1,j3,BatchMatMul,BatchMatMul：共享权重行数,"A[1, 64, 384, 128]
+B常量[128, 32]
+Y[1, 64, 384, 32]",batchmatmul_close/1db.xlsx
+batchmatmul_close,2,j5,BatchMatMul,BatchMatMul：共享权重行数,"A[1, 64, 640, 128]
+B常量[128, 32]
+Y[1, 64, 640, 32]",batchmatmul_close/2db.xlsx
+batchmatmul_close,3,j8,BatchMatMul,BatchMatMul：共享权重行数,"A[1, 64, 1024, 128]
+B常量[128, 32]
+Y[1, 64, 1024, 32]",batchmatmul_close/3db.xlsx
+batchmatmul_close,4,k1,BatchMatMul,BatchMatMul：独立权重batch,"A[64, 128, 128]
+B常量[64, 128, 128]
+Y[64, 128, 128]",batchmatmul_close/4db.xlsx
+batchmatmul_close,5,k3,BatchMatMul,BatchMatMul：独立权重batch,"A[96, 128, 128]
+B常量[96, 128, 128]
+Y[96, 128, 128]",batchmatmul_close/5db.xlsx
+batchmatmul_close,6,k6,BatchMatMul,BatchMatMul：独立权重batch,"A[192, 128, 128]
+B常量[192, 128, 128]
+Y[192, 128, 128]",batchmatmul_close/6db.xlsx
+batchmatmul_close,7,k8,BatchMatMul,BatchMatMul：独立权重batch,"A[256, 128, 128]
+B常量[256, 128, 128]
+Y[256, 128, 128]",batchmatmul_close/7db.xlsx
+batchmatmul_close,8,ak1,BatchMatMul,BatchMatMul：小M,"A[2, 8, 1, 256]
+B常量[8, 256, 256]
+Y[2, 8, 1, 256]",batchmatmul_close/8db.xlsx
+batchmatmul_close,9,ak3,BatchMatMul,BatchMatMul：小M,"A[2, 8, 3, 256]
+B常量[8, 256, 256]
+Y[2, 8, 3, 256]",batchmatmul_close/9db.xlsx
+batchmatmul_close,10,ak5,BatchMatMul,BatchMatMul：小M,"A[2, 8, 6, 256]
+B常量[8, 256, 256]
+Y[2, 8, 6, 256]",batchmatmul_close/10db.xlsx
+batchmatmul_close,11,ak8,BatchMatMul,BatchMatMul：小M,"A[2, 8, 16, 256]
+B常量[8, 256, 256]
+Y[2, 8, 16, 256]",batchmatmul_close/11db.xlsx
+add_close,0,l1,Add,Add：双动态同shape,"X[1572864]
+W[1572864]
+Y[1572864]",add_close/0db.xlsx
+add_close,1,l4,Add,Add：双动态同shape,"X[3145728]
+W[3145728]
+Y[3145728]",add_close/1db.xlsx
+add_close,2,l6,Add,Add：双动态同shape,"X[4718592]
+W[4718592]
+Y[4718592]",add_close/2db.xlsx
+add_close,3,l8,Add,Add：双动态同shape,"X[6291456]
+W[6291456]
+Y[6291456]",add_close/3db.xlsx
+add_close,4,m1,Add,Add：常量同shape,"X[1572864]
+W常量[1572864]
+Y[1572864]",add_close/4db.xlsx
+add_close,5,m4,Add,Add：常量同shape,"X[3145728]
+W常量[3145728]
+Y[3145728]",add_close/5db.xlsx
+add_close,6,m6,Add,Add：常量同shape,"X[4718592]
+W常量[4718592]
+Y[4718592]",add_close/6db.xlsx
+add_close,7,m8,Add,Add：常量同shape,"X[6291456]
+W常量[6291456]
+Y[6291456]",add_close/7db.xlsx
+add_close,8,x1,Add,Add：逐通道常量广播,"X[1, 512, 1536]
+W常量[1, 512, 1]
+Y[1, 512, 1536]",add_close/8db.xlsx
+add_close,9,x6,Add,Add：逐通道常量广播,"X[1, 512, 5120]
+W常量[1, 512, 1]
+Y[1, 512, 5120]",add_close/9db.xlsx
+add_close,10,x7,Add,Add：逐通道常量广播,"X[1, 512, 6144]
+W常量[1, 512, 1]
+Y[1, 512, 6144]",add_close/10db.xlsx
+add_close,11,x8,Add,Add：逐通道常量广播,"X[1, 512, 8192]
+W常量[1, 512, 1]
+Y[1, 512, 8192]",add_close/11db.xlsx
+mul_close,0,n1,Mul,Mul：双动态同shape,"X[1572864]
+W[1572864]
+Y[1572864]",mul_close/0db.xlsx
+mul_close,1,n4,Mul,Mul：双动态同shape,"X[3145728]
+W[3145728]
+Y[3145728]",mul_close/1db.xlsx
+mul_close,2,n6,Mul,Mul：双动态同shape,"X[4718592]
+W[4718592]
+Y[4718592]",mul_close/2db.xlsx
+mul_close,3,n8,Mul,Mul：双动态同shape,"X[6291456]
+W[6291456]
+Y[6291456]",mul_close/3db.xlsx
+mul_close,4,y1,Mul,Mul：逐通道广播,"X[1, 512, 1536]
+W常量[1, 512, 1]
+Y[1, 512, 1536]",mul_close/4db.xlsx
+mul_close,5,y6,Mul,Mul：逐通道广播,"X[1, 512, 5120]
+W常量[1, 512, 1]
+Y[1, 512, 5120]",mul_close/5db.xlsx
+mul_close,6,y7,Mul,Mul：逐通道广播,"X[1, 512, 6144]
+W常量[1, 512, 1]
+Y[1, 512, 6144]",mul_close/6db.xlsx
+mul_close,7,y8,Mul,Mul：逐通道广播,"X[1, 512, 8192]
+W常量[1, 512, 1]
+Y[1, 512, 8192]",mul_close/7db.xlsx
+mul_close,8,an3,Mul,Mul：双动态可测下限,"X[327680]
+W[327680]
+Y[327680]",mul_close/8db.xlsx
+mul_close,9,an5,Mul,Mul：双动态可测下限,"X[393216]
+W[393216]
+Y[393216]",mul_close/9db.xlsx
+mul_close,10,an6,Mul,Mul：双动态可测下限,"X[458752]
+W[458752]
+Y[458752]",mul_close/10db.xlsx
+mul_close,11,an8,Mul,Mul：双动态可测下限,"X[655360]
+W[655360]
+Y[655360]",mul_close/11db.xlsx
+activation_close,0,o1,Activation,Sigmoid：元素数,"X[1572864]
+Y[1572864]",activation_close/0db.xlsx
+activation_close,1,o4,Activation,Sigmoid：元素数,"X[3145728]
+Y[3145728]",activation_close/1db.xlsx
+activation_close,2,o6,Activation,Sigmoid：元素数,"X[4718592]
+Y[4718592]",activation_close/2db.xlsx
+activation_close,3,o8,Activation,Sigmoid：元素数,"X[6291456]
+Y[6291456]",activation_close/3db.xlsx
+activation_close,4,p1,Activation,Tanh：元素数,"X[1572864]
+Y[1572864]",activation_close/4db.xlsx
+activation_close,5,p4,Activation,Tanh：元素数,"X[3145728]
+Y[3145728]",activation_close/5db.xlsx
+activation_close,6,p6,Activation,Tanh：元素数,"X[4718592]
+Y[4718592]",activation_close/6db.xlsx
+activation_close,7,p8,Activation,Tanh：元素数,"X[6291456]
+Y[6291456]",activation_close/7db.xlsx
+activation_close,8,aq1,Activation,Sigmoid：可测下限,"X[360448]
+Y[360448]",activation_close/8db.xlsx
+activation_close,9,aq3,Activation,Sigmoid：可测下限,"X[458752]
+Y[458752]",activation_close/9db.xlsx
+activation_close,10,aq5,Activation,Sigmoid：可测下限,"X[589824]
+Y[589824]",activation_close/10db.xlsx
+activation_close,11,aq8,Activation,Sigmoid：可测下限,"X[786432]
+Y[786432]",activation_close/11db.xlsx
+activation_close,12,ar1,Activation,Tanh：可测下限,"X[360448]
+Y[360448]",activation_close/12db.xlsx
+activation_close,13,ar3,Activation,Tanh：可测下限,"X[458752]
+Y[458752]",activation_close/13db.xlsx
+activation_close,14,ar5,Activation,Tanh：可测下限,"X[589824]
+Y[589824]",activation_close/14db.xlsx
+activation_close,15,ar8,Activation,Tanh：可测下限,"X[786432]
+Y[786432]",activation_close/15db.xlsx
+prelu_close,0,q1,PRelu,PRelu：空间宽度,"X[1, 96, 1, 24576]
+slope常量[1, 96, 1, 1]
+Y[1, 96, 1, 24576]",prelu_close/0db.xlsx
+prelu_close,1,q5,PRelu,PRelu：空间宽度,"X[1, 96, 1, 61440]
+slope常量[1, 96, 1, 1]
+Y[1, 96, 1, 61440]",prelu_close/1db.xlsx
+prelu_close,2,q6,PRelu,PRelu：空间宽度,"X[1, 96, 1, 73728]
+slope常量[1, 96, 1, 1]
+Y[1, 96, 1, 73728]",prelu_close/2db.xlsx
+prelu_close,3,q7,PRelu,PRelu：空间宽度,"X[1, 96, 1, 86016]
+slope常量[1, 96, 1, 1]
+Y[1, 96, 1, 86016]",prelu_close/3db.xlsx
+prelu_close,4,q8,PRelu,PRelu：空间宽度,"X[1, 96, 1, 98304]
+slope常量[1, 96, 1, 1]
+Y[1, 96, 1, 98304]",prelu_close/4db.xlsx
+prelu_close,5,as1,PRelu,PRelu：可测下限,"X[1, 96, 1, 4608]
+slope常量[1, 96, 1, 1]
+Y[1, 96, 1, 4608]",prelu_close/5db.xlsx
+prelu_close,6,as5,PRelu,PRelu：可测下限,"X[1, 96, 1, 7168]
+slope常量[1, 96, 1, 1]
+Y[1, 96, 1, 7168]",prelu_close/6db.xlsx
+prelu_close,7,as7,PRelu,PRelu：可测下限,"X[1, 96, 1, 10240]
+slope常量[1, 96, 1, 1]
+Y[1, 96, 1, 10240]",prelu_close/7db.xlsx
+prelu_close,8,as8,PRelu,PRelu：可测下限,"X[1, 96, 1, 12288]
+slope常量[1, 96, 1, 1]
+Y[1, 96, 1, 12288]",prelu_close/8db.xlsx
+reducesum_close,0,r1,ReduceSum,ReduceSum：axis0输出数,"X[640, 1024, 1]
+Y[1, 1024, 1]",reducesum_close/0db.xlsx
+reducesum_close,1,r3,ReduceSum,ReduceSum：axis0输出数,"X[640, 1536, 1]
+Y[1, 1536, 1]",reducesum_close/1db.xlsx
+reducesum_close,2,r5,ReduceSum,ReduceSum：axis0输出数,"X[640, 2560, 1]
+Y[1, 2560, 1]",reducesum_close/2db.xlsx
+reducesum_close,3,r7,ReduceSum,ReduceSum：axis0输出数,"X[640, 3584, 1]
+Y[1, 3584, 1]",reducesum_close/3db.xlsx
+reducesum_close,4,s1,ReduceSum,ReduceSum：通道归约输出数,"X[1, 256, 10, 256]
+Y[1, 1, 10, 256]",reducesum_close/4db.xlsx
+reducesum_close,5,s3,ReduceSum,ReduceSum：通道归约输出数,"X[1, 256, 10, 384]
+Y[1, 1, 10, 384]",reducesum_close/5db.xlsx
+reducesum_close,6,s5,ReduceSum,ReduceSum：通道归约输出数,"X[1, 256, 10, 640]
+Y[1, 1, 10, 640]",reducesum_close/6db.xlsx
+reducesum_close,7,s8,ReduceSum,ReduceSum：通道归约输出数,"X[1, 256, 10, 1024]
+Y[1, 1, 10, 1024]",reducesum_close/7db.xlsx
+reducesum_close,8,at1,ReduceSum,ReduceSum：axis0较短归约,"X[640, 256, 1]
+Y[1, 256, 1]",reducesum_close/8db.xlsx
+reducesum_close,9,at4,ReduceSum,ReduceSum：axis0较短归约,"X[1024, 256, 1]
+Y[1, 256, 1]",reducesum_close/9db.xlsx
+reducesum_close,10,at6,ReduceSum,ReduceSum：axis0较短归约,"X[1280, 256, 1]
+Y[1, 256, 1]",reducesum_close/10db.xlsx
+reducesum_close,11,at8,ReduceSum,ReduceSum：axis0较短归约,"X[1536, 256, 1]
+Y[1, 256, 1]",reducesum_close/11db.xlsx
+reducesum_close,12,au1,ReduceSum,ReduceSum：单输出小张量,"X[1, 400, 3, 1]
+Y[1, 1, 1, 1]",reducesum_close/12db.xlsx
+reducesum_close,13,au4,ReduceSum,ReduceSum：单输出小张量,"X[1, 448, 3, 1]
+Y[1, 1, 1, 1]",reducesum_close/13db.xlsx
+reducesum_close,14,au6,ReduceSum,ReduceSum：单输出小张量,"X[1, 480, 3, 1]
+Y[1, 1, 1, 1]",reducesum_close/14db.xlsx
+reducesum_close,15,au8,ReduceSum,ReduceSum：单输出小张量,"X[1, 512, 3, 1]
+Y[1, 1, 1, 1]",reducesum_close/15db.xlsx
+layernorm_close,0,t1,LayerNorm,LayerNorm：L1024行数,"X[512, 1024]
+scale常量[1, 1024]
+bias常量[1, 1024]
+Y[512, 1024]",layernorm_close/0db.xlsx
+layernorm_close,1,t4,LayerNorm,LayerNorm：L1024行数,"X[1024, 1024]
+scale常量[1, 1024]
+bias常量[1, 1024]
+Y[1024, 1024]",layernorm_close/1db.xlsx
+layernorm_close,2,t6,LayerNorm,LayerNorm：L1024行数,"X[1536, 1024]
+scale常量[1, 1024]
+bias常量[1, 1024]
+Y[1536, 1024]",layernorm_close/2db.xlsx
+layernorm_close,3,t8,LayerNorm,LayerNorm：L1024行数,"X[2048, 1024]
+scale常量[1, 1024]
+bias常量[1, 1024]
+Y[2048, 1024]",layernorm_close/3db.xlsx
+layernorm_close,4,u1,LayerNorm,LayerNorm：L256行数,"X[512, 256]
+scale常量[1, 256]
+bias常量[1, 256]
+Y[512, 256]",layernorm_close/4db.xlsx
+layernorm_close,5,u4,LayerNorm,LayerNorm：L256行数,"X[1024, 256]
+scale常量[1, 256]
+bias常量[1, 256]
+Y[1024, 256]",layernorm_close/5db.xlsx
+layernorm_close,6,u6,LayerNorm,LayerNorm：L256行数,"X[1536, 256]
+scale常量[1, 256]
+bias常量[1, 256]
+Y[1536, 256]",layernorm_close/6db.xlsx
+layernorm_close,7,u8,LayerNorm,LayerNorm：L256行数,"X[2048, 256]
+scale常量[1, 256]
+bias常量[1, 256]
+Y[2048, 256]",layernorm_close/7db.xlsx
+layernorm_close,8,aw1,LayerNorm,LayerNorm：较少独立行,"X[96, 2048]
+scale常量[1, 2048]
+bias常量[1, 2048]
+Y[96, 2048]",layernorm_close/8db.xlsx
+layernorm_close,9,aw4,LayerNorm,LayerNorm：较少独立行,"X[144, 2048]
+scale常量[1, 2048]
+bias常量[1, 2048]
+Y[144, 2048]",layernorm_close/9db.xlsx
+layernorm_close,10,aw6,LayerNorm,LayerNorm：较少独立行,"X[176, 2048]
+scale常量[1, 2048]
+bias常量[1, 2048]
+Y[176, 2048]",layernorm_close/10db.xlsx
+layernorm_close,11,aw8,LayerNorm,LayerNorm：较少独立行,"X[224, 2048]
+scale常量[1, 2048]
+bias常量[1, 2048]
+Y[224, 2048]",layernorm_close/11db.xlsx
+softmax_close,0,v1,Softmax,Softmax：L32行数,"X[1, 8192, 2, 32]
+Y[1, 8192, 2, 32]",softmax_close/0db.xlsx
+softmax_close,1,v3,Softmax,Softmax：L32行数,"X[1, 12288, 2, 32]
+Y[1, 12288, 2, 32]",softmax_close/1db.xlsx
+softmax_close,2,v5,Softmax,Softmax：L32行数,"X[1, 20480, 2, 32]
+Y[1, 20480, 2, 32]",softmax_close/2db.xlsx
+softmax_close,3,v8,Softmax,Softmax：L32行数,"X[1, 32768, 2, 32]
+Y[1, 32768, 2, 32]",softmax_close/3db.xlsx
+softmax_close,4,w1,Softmax,Softmax：L256行数,"X[1, 2048, 2, 256]
+Y[1, 2048, 2, 256]",softmax_close/4db.xlsx
+softmax_close,5,w3,Softmax,Softmax：L256行数,"X[1, 3072, 2, 256]
+Y[1, 3072, 2, 256]",softmax_close/5db.xlsx
+softmax_close,6,w5,Softmax,Softmax：L256行数,"X[1, 5120, 2, 256]
+Y[1, 5120, 2, 256]",softmax_close/6db.xlsx
+softmax_close,7,w8,Softmax,Softmax：L256行数,"X[1, 8192, 2, 256]
+Y[1, 8192, 2, 256]",softmax_close/7db.xlsx
+softmax_close,8,ax1,Softmax,Softmax：等元素几何对照,"X[1, 4096, 2, 32]
+Y[1, 4096, 2, 32]",softmax_close/8db.xlsx
+softmax_close,9,ax2,Softmax,Softmax：等元素几何对照,"X[1, 2048, 2, 64]
+Y[1, 2048, 2, 64]",softmax_close/9db.xlsx
+softmax_close,10,ax3,Softmax,Softmax：等元素几何对照,"X[1, 1024, 2, 128]
+Y[1, 1024, 2, 128]",softmax_close/10db.xlsx
+softmax_close,11,ax4,Softmax,Softmax：等元素几何对照,"X[1, 512, 2, 256]
+Y[1, 512, 2, 256]",softmax_close/11db.xlsx
+softmax_close,12,ax5,Softmax,Softmax：等元素几何对照,"X[1, 256, 2, 512]
+Y[1, 256, 2, 512]",softmax_close/12db.xlsx
+softmax_close,13,ax6,Softmax,Softmax：等元素几何对照,"X[1, 128, 2, 1024]
+Y[1, 128, 2, 1024]",softmax_close/13db.xlsx
+softmax_close,14,ax7,Softmax,Softmax：等元素几何对照,"X[1, 64, 2, 2048]
+Y[1, 64, 2, 2048]",softmax_close/14db.xlsx
+softmax_close,15,ax8,Softmax,Softmax：等元素几何对照,"X[1, 32, 2, 4096]
+Y[1, 32, 2, 4096]",softmax_close/15db.xlsx
+softmax_close,16,ay1,Softmax,Softmax：较少独立行,"X[1, 896, 2, 128]
+Y[1, 896, 2, 128]",softmax_close/16db.xlsx
+softmax_close,17,ay3,Softmax,Softmax：较少独立行,"X[1, 1152, 2, 128]
+Y[1, 1152, 2, 128]",softmax_close/17db.xlsx
+softmax_close,18,ay5,Softmax,Softmax：较少独立行,"X[1, 1408, 2, 128]
+Y[1, 1408, 2, 128]",softmax_close/18db.xlsx
+softmax_close,19,ay8,Softmax,Softmax：较少独立行,"X[1, 2048, 2, 128]
+Y[1, 2048, 2, 128]",softmax_close/19db.xlsx
